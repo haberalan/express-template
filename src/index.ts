@@ -25,6 +25,8 @@ app.use((req, res, next) => {
 app.use(cors());
 
 // Routes
+import { userRoutes } from "./routes/user.routes";
+app.use("/api/user", userRoutes);
 
 // Route error handler
 app.use((_, res) => {
