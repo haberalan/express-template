@@ -7,7 +7,7 @@ const sendMail = async (
   template: string,
   contentItems: Object,
   title: string,
-  email: string
+  email: string[] | string
 ) => {
   try {
     const transporter = nodemailer.createTransport({
@@ -37,7 +37,8 @@ const sendMail = async (
 
     transporter.sendMail(mailOptions, (err, info) => {
       if (err) console.log(err);
-      else console.log("Email sent: " + info.response);
+      else
+        console.log(`Successfully sent email to ${info.accepted.join(", ")}.`);
     });
   } catch (err) {
     throw new Error(err);

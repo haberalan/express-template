@@ -4,142 +4,126 @@ import sharp from "sharp";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { Buffer } from "buffer";
-import { ObjectId } from "mongoose";
+import mongoose from "mongoose";
 import { Request, Response } from "express";
+
+import { createToken } from "../utils/createToken";
 
 import User from "../models/user.model";
 import { IUser } from "../types/IUser.types";
 
-import Token from "../models/token.model";
 import sendMail from "../utils/sendEmail";
 
-const createToken = (_id: ObjectId, expiresIn: string | number | null) => {
-  return jwt.sign({ _id }, process.env.SECRET, expiresIn && { expiresIn });
-};
-
-const login = async (
+const getUser = async (
   req: Request & {
-    username: string;
-    password: string;
-    expiresIn: boolean;
+    params: {
+      id: string;
+    };
   },
   res: Response
 ) => {
-  const { username, password, expiresIn } = req.body;
+  const { id } = req.params;
 
   try {
-    const user = await User.login(username, password);
+    if (!mongoose.Types.ObjectId.isValid(id))
+      throw {
+        global: "User ID is invalid.",
+      };
 
-    const token = createToken(user._id, !expiresIn && "24h");
+    const user = await User.findById(id);
+
+    if (!user)
+      throw {
+        global: "User not found.",
+      };
 
     res.status(200).json({
       _id: user._id,
       username: user.username,
-      email: user.email,
-      updatedAt: user.updatedAt,
-      token,
     });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json(err);
+  }
+};
+
+const login = async (req: Request, res: Response) => {
+  const { username, password, longSession } = req.body;
+
+  try {
+    const user = await User.login(username, password);
+
+    if (user.verified.length)
+      throw {
+        global: "Please verify your email address.",
+      };
+
+    const token = createToken(user._id, longSession ? "30d" : "1d");
+
+    res
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: true,
+        domain: process.env.DOMAIN,
+        expires: new Date(
+          Date.now() + (longSession ? 30 : 1) * 24 * 60 * 60 * 1000
+        ),
+      })
+      .status(200)
+      .json({
+        _id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        email: user.email,
+        passwordLastUpdated: user.passwordLastUpdated,
+        createdAt: user.createdAt,
+      });
+  } catch (err) {
+    res.status(400).json(err);
   }
 };
 
 const signup = async (
   req: Request & {
     username: string;
-    email: string;
     password: string;
-    expiresIn: string | number | null;
+    email: string;
   },
   res: Response
 ) => {
-  const { username, email, password, expiresIn } = req.body;
+  const { username, password, email } = req.body;
 
   try {
     const user = await User.signup(username, email, password);
 
-    const token = createToken(user._id, !expiresIn && "24h");
+    // create verify email
+    // const url = `${process.env.CLIENT_URL}/verify-email/${user.verified}`;
+    // await sendMail(email, url);
+
+    res.status(201).json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+    });
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+
+const verify = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { token } = req.query;
+
+  try {
+    const user = await User.verify(token as string, id);
 
     res.status(200).json({
       _id: user._id,
       username: user.username,
       email: user.email,
-      updatedAt: user.updatedAt,
-      token,
     });
   } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-const requestResetPassword = async (
-  req: Request & { email: string },
-  res: Response
-) => {
-  const { email } = req.body;
-
-  try {
-    const user = await User.findOne({ email });
-
-    if (!user) throw Error("There is no user asssociated with this email.");
-
-    const isAlreadyToken = await Token.findOne({ user_id: user._id });
-
-    if (isAlreadyToken) await isAlreadyToken.deleteOne();
-
-    const resetToken = crypto.randomBytes(32).toString("hex");
-
-    const salt = await bcrypt.genSalt(10);
-
-    const hashedResetToken = await bcrypt.hash(resetToken, salt);
-
-    await Token.create({
-      user_id: user._id,
-      token: hashedResetToken,
-      createdAt: Date.now(),
-    });
-
-    const link = `${process.env.CLIENT_URL}auth/reset?token=${resetToken}&id=${user._id}`;
-
-    await sendMail(
-      "RequestPasswordReset",
-      { link: link },
-      "Password Reset",
-      user.email
-    );
-
-    res.status(200).json({ email: user.email });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-};
-
-const resetPassword = async (
-  req: Request & { user_id: string; token: string; password: string },
-  res: Response
-) => {
-  const { user_id, token, password } = req.body;
-
-  try {
-    if (!user_id || !password)
-      throw Error("Invalid or expired password reset token.");
-
-    const passwordResetToken = await Token.findOne({ user_id });
-
-    if (!passwordResetToken || !token)
-      throw Error("Invalid or expired password reset token.");
-
-    const isValidToken = await bcrypt.compare(token, passwordResetToken.token);
-
-    if (!isValidToken) throw Error("Invalid or expired password reset token.");
-
-    const user = await User.updatePassword(user_id, password);
-
-    await passwordResetToken.deleteOne();
-
-    res.status(200).json({ username: user.username });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json(err);
   }
 };
 
@@ -157,7 +141,33 @@ const getAvatar = async (req: Request, res: Response) => {
 
     res.end(dataBuffer);
   } catch (err) {
-    res.status(400).json({ error: "There was an error" });
+    res.status(400).json({ global: "There was an error." });
+  }
+};
+
+const requestResetPassword = async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.requestResetPassword(email);
+
+    res.status(200).json({ email: user.email });
+  } catch (err) {
+    res.status(400).json(err);
+  }
+};
+
+const resetPassword = async (req: Request, res: Response) => {
+  const { token } = req.query;
+  const { id } = req.params;
+  const { newPassword } = req.body;
+
+  try {
+    const user = await User.resetPassword(id, token as string, newPassword);
+
+    res.status(200).json({ email: user.email });
+  } catch (err) {
+    res.status(400).json(err);
   }
 };
 
@@ -175,30 +185,29 @@ const upload = multer({
     if (file.mimetype.split("/")[0] === "image") {
       cb(null, true);
     } else {
-      cb(new Error("Only images are allowed!"));
+      cb(new Error("Only images are allowed."));
     }
   },
 });
 
 const updateAvatar = [
-  upload.single("avatar"),
+  upload.any(),
   async (req: Request & { user: IUser }, res: Response) => {
     const user_id = req.user._id;
 
     try {
-      const avatar = await sharp(req.file.buffer)
+      if (!req.files[0]) throw { global: "Please provide an image." };
+
+      const avatar = await sharp(req.files[0].buffer)
         .resize(200, 200)
         .png({ quality: 100 })
         .toBuffer();
 
-      const user = await User.updateAvatar(user_id, {
-        data: avatar,
-        type: "image/png",
-      });
+      const user = await User.updateAvatar(user_id, avatar);
 
       res.status(200).json({ username: user.username });
     } catch (err) {
-      res.status(400).json({ error: "There was an error." });
+      res.status(400).json(err);
     }
   },
 ];
@@ -207,17 +216,29 @@ const updatePassword = async (
   req: Request & { user: IUser },
   res: Response
 ) => {
-  const user_id = req.user._id;
   const { newPassword } = req.body;
+  const user_id = req.user._id;
 
   try {
     const user = await User.updatePassword(user_id, newPassword);
 
     res.status(200).json({ username: user.username });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json(err);
   }
 };
+
+const requestUpdateEmail = async (
+  req: Request & { user: IUser },
+  res: Response
+) => {};
+
+const updateEmail = async (req: Request & { user: IUser }, res: Response) => {};
+
+const updateProfile = async (
+  req: Request & { user: IUser },
+  res: Response
+) => {};
 
 const deleteUser = async (req: Request & { user: IUser }, res: Response) => {
   const user_id = req.user._id;
@@ -227,20 +248,43 @@ const deleteUser = async (req: Request & { user: IUser }, res: Response) => {
 
     // delete all data associated with user
 
-    res.status(200).json({ username: user.username });
+    res
+      .status(200)
+      .clearCookie("token", {
+        httpOnly: true,
+      })
+      .json({ username: user.username });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json(err);
+  }
+};
+
+const logoutUser = async (req: Request, res: Response) => {
+  const cookies = req.cookies.token;
+
+  try {
+    res
+      .status(200)
+      .clearCookie("token", {
+        httpOnly: true,
+      })
+      .json({ global: "User logged out." });
+  } catch (err) {
+    res.status(400).json({ global: err.message });
   }
 };
 
 export default {
+  getUser,
+  getAvatar,
   login,
   signup,
+  verify,
   requestResetPassword,
   resetPassword,
-  getAvatar,
   authorize,
   updateAvatar,
   updatePassword,
   deleteUser,
+  logoutUser,
 };

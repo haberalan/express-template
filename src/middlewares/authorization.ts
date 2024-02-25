@@ -1,21 +1,19 @@
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { NextFunction, Request, Response } from "express";
+import { ErrorRequestHandler, NextFunction, Request, Response } from "express";
 
 import User from "../models/user.model";
 import { IUser } from "../types/IUser.types";
 
-const isAuthorized = async (
+const authorization = async (
   req: Request & { user: IUser },
   res: Response,
   next: NextFunction
 ) => {
-  const { authorization } = req.headers;
+  const { token } = req.cookies;
 
-  if (!authorization) {
+  if (!token) {
     return res.status(401).json({ error: "Authorization token required!" });
   }
-
-  const token = authorization.split(" ")[1];
 
   try {
     const { _id } = jwt.verify(token, process.env.SECRET) as JwtPayload;
@@ -28,8 +26,8 @@ const isAuthorized = async (
 
     next();
   } catch (err) {
-    res.status(401).json({ error: "Request is not authorized!" });
+    res.status(401).json({ error: "Request is not authorized." });
   }
 };
 
-export default isAuthorized;
+export default authorization;
