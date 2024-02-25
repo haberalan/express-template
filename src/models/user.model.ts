@@ -29,13 +29,10 @@ const userSchema = new Schema<IUser, IUserModel>(
       required: true,
     },
     avatar: {
-      required: false,
       data: {
-        required: false,
         type: Buffer,
       },
       type: {
-        required: false,
         type: String,
       },
     },
