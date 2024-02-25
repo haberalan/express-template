@@ -96,9 +96,8 @@ const signup = async (
   try {
     const user = await User.signup(username, email, password);
 
-    // create verify email
-    // const url = `${process.env.CLIENT_URL}/verify-email/${user.verified}`;
-    // await sendMail(email, url);
+    // Send email verification
+    // await sendMail();
 
     res.status(201).json({
       _id: user._id,
@@ -150,6 +149,9 @@ const requestResetPassword = async (req: Request, res: Response) => {
 
   try {
     const user = await User.requestResetPassword(email);
+
+    // Send email verification
+    // await sendMail();
 
     res.status(200).json({ email: user.email });
   } catch (err) {
@@ -231,7 +233,10 @@ const updatePassword = async (
 const requestUpdateEmail = async (
   req: Request & { user: IUser },
   res: Response
-) => {};
+) => {
+  // Send email verification
+  // await sendMail();
+};
 
 const updateEmail = async (req: Request & { user: IUser }, res: Response) => {};
 
