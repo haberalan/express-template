@@ -403,9 +403,109 @@ userSchema.statics.resetPassword = async function (
   return user;
 };
 
-// userSchema.statics.requestUpdateEmail = async function (): Promise<IUser> {};
+userSchema.statics.requestUpdateEmail = async function (
+  user_id: string,
+  email: string
+): Promise<{ user: IUser; token: string }> {
+  let errors: {
+    email?: string;
+    global?: string;
+  } = {};
 
-// userSchema.statics.updateEmail = async function (): Promise<IUser> {};
+  if (!email || !validator.isEmail(email)) errors.email = "Email is not valid.";
+
+  if (Object.keys(errors).length) throw errors;
+
+  const userWithNewEmail = await this.findOne({ email: email });
+
+  if (userWithNewEmail) errors.email = "Email is already in use.";
+
+  const user = await this.findById(user_id);
+
+  if (!user) errors.global = "There is no user.";
+
+  if (Object.keys(errors).length) throw errors;
+
+  const salt = await bcrypt.genSalt(10);
+
+  const verifyNumber = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const token = await bcrypt.hash(verifyNumber, salt);
+
+  const emailUpdate = {
+    newEmail: email,
+    token,
+    createdAt: Date.now(),
+  };
+
+  const updatedUser = await this.findByIdAndUpdate(
+    user_id,
+    {
+      emailUpdate,
+    },
+    { new: true }
+  );
+
+  return {
+    user: updatedUser,
+    token: verifyNumber,
+  };
+};
+
+userSchema.statics.updateEmail = async function (
+  user_id: string,
+  token: string
+): Promise<IUser> {
+  let errors: {
+    global?: string;
+  } = {};
+
+  if (!token) errors.global = "Token is not valid.";
+
+  if (Object.keys(errors).length) throw errors;
+
+  const user = await this.findById(user_id);
+
+  if (!user) errors.global = "There is no user.";
+
+  if (Object.keys(errors).length) throw errors;
+
+  if (!user.emailUpdate) errors.global = "Token is not valid.";
+
+  if (Object.keys(errors).length) throw errors;
+
+  if (user.emailUpdate.createdAt.getTime() + 1000 * 60 * 10 < Date.now())
+    errors.global = "Token is expired.";
+
+  if (Object.keys(errors).length) throw errors;
+
+  const valid = await bcrypt.compare(
+    token.toString(),
+    user.emailUpdate.token.toString()
+  );
+
+  if (!valid) errors.global = "Token is not valid.";
+
+  if (Object.keys(errors).length) throw errors;
+
+  const userWithNewEmail = await this.findOne({
+    email: user.emailUpdate.newEmail,
+  });
+
+  if (userWithNewEmail) {
+    errors.global = "Email is already in use.";
+    user.emailUpdate = undefined;
+  }
+
+  if (Object.keys(errors).length) throw errors;
+
+  user.email = user.emailUpdate.newEmail;
+  user.emailUpdate = undefined;
+
+  await user.save();
+
+  return user;
+};
 
 userSchema.statics.updateProfile = async function (
   user_id: string,

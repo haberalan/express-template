@@ -47,7 +47,10 @@ interface IUserModel extends Model<IUser> {
     token: string,
     newPassword: string
   ): Promise<IUser>;
-  requestUpdateEmail(user_id: string, newEmail: string): Promise<IUser>;
+  requestUpdateEmail(
+    user_id: string,
+    newEmail: string
+  ): Promise<{ user: IUser; token: string }>;
   updateEmail(user_id: string, token: string): Promise<IUser>;
   updateProfile(
     user_id: string,
