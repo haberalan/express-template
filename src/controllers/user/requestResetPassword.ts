@@ -16,7 +16,7 @@ export const requestResetPassword = async (req: Request, res: Response) => {
         code: data.token,
         link: "",
       },
-      "Reset password. | express-template",
+      "Reset password.",
       email
     );
 
