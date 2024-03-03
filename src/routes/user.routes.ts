@@ -1,31 +1,44 @@
 import express from "express";
 
-import userController from "../controllers/user.controller";
-import authorization from "../middlewares/authorization";
+import authorization from "#src/middlewares/authorization";
+import {
+  signup,
+  login,
+  signupVerify,
+  getAvatar,
+  getUser,
+  requestResetPassword,
+  resetPassword,
+  authorize,
+  updateAvatar,
+  updatePassword,
+  deleteUser,
+  logoutUser,
+} from "#src/controllers/user/index";
 
 const router = express.Router();
 
-router.get("/:id", userController.getUser);
+router.get("/:id", getUser);
 
-router.get("/avatar/:id", userController.getAvatar);
+router.get("/avatar/:id", getAvatar);
 
-router.post("/signup", userController.signup);
+router.post("/signup", signup);
 
-router.post("/login", userController.login);
+router.post("/login", login);
 
-router.post("/verify/:id", userController.verify);
+router.post("/verify/:id", signupVerify);
 
-router.post("/request-reset-password", userController.requestResetPassword);
+router.post("/request-reset-password", requestResetPassword);
 
-router.patch("/reset-password/:id", userController.resetPassword);
+router.patch("/reset-password/:id", resetPassword);
 
 router.use(authorization);
 
-router.post("/authorize", userController.authorize);
+router.post("/authorize", authorize);
 
-router.patch("/update-avatar", userController.updateAvatar);
+router.patch("/update-avatar", updateAvatar);
 
-router.patch("/update-password", userController.updatePassword);
+router.patch("/update-password", updatePassword);
 
 // router.post('/request-update-email', userController.requestUpdateEmail);
 
@@ -33,8 +46,8 @@ router.patch("/update-password", userController.updatePassword);
 
 // router.patch('/update-profile', userController.updateProfile);
 
-router.delete("/delete", userController.deleteUser);
+router.delete("/delete", deleteUser);
 
-router.post("/logout", userController.logoutUser);
+router.post("/logout", logoutUser);
 
 export { router as userRoutes };

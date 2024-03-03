@@ -140,7 +140,7 @@ userSchema.statics.signup = async function (
   username: string,
   email: string,
   password: string
-): Promise<IUser> {
+): Promise<{ user: IUser; token: string }> {
   let errors: {
     username?: string;
     email?: string;
@@ -186,15 +186,24 @@ userSchema.statics.signup = async function (
   if (Object.keys(errors).length) throw errors;
 
   const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-  const token = await bcrypt.hash(enteredUsername + enteredEmail, salt);
 
-  return this.create({
+  const hashedPassword = await bcrypt.hash(password, salt);
+
+  const verifyNumber = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const token = await bcrypt.hash(verifyNumber, salt);
+
+  const user = await this.create({
     username: enteredUsername,
     email: enteredEmail,
     password: hashedPassword,
     verified: token,
   });
+
+  return {
+    user,
+    token: verifyNumber,
+  };
 };
 
 userSchema.statics.verify = async function (
@@ -206,10 +215,6 @@ userSchema.statics.verify = async function (
   } = {};
 
   if (!token) errors.global = "Token is not valid.";
-
-  console.log("1");
-
-  console.log("token", token, id);
 
   if (Object.keys(errors).length) throw errors;
 
@@ -228,12 +233,9 @@ userSchema.statics.verify = async function (
 
   if (Object.keys(errors).length) throw errors;
 
-  const valid = bcrypt.compareSync(
-    user.username + user.email,
-    token.toString()
-  );
+  const valid = await bcrypt.compare(token.toString(), user.verified);
 
-  if (!user) errors.global = "Token is not valid.";
+  if (!valid) errors.global = "Token is not valid.";
 
   if (Object.keys(errors).length) throw errors;
 
@@ -301,7 +303,7 @@ userSchema.statics.updatePassword = async function (
 
 userSchema.statics.requestResetPassword = async function (
   email: string
-): Promise<IUser> {
+): Promise<{ user: IUser; token: string }> {
   let errors: {
     global?: string;
   } = {};
@@ -317,20 +319,28 @@ userSchema.statics.requestResetPassword = async function (
   if (Object.keys(errors).length) throw errors;
 
   const salt = await bcrypt.genSalt(10);
-  const token = await bcrypt.hash(user.username + user.email, salt);
+
+  const verifyNumber = Math.floor(100000 + Math.random() * 900000).toString();
+
+  const token = await bcrypt.hash(verifyNumber, salt);
 
   const passwordReset = {
     token,
     createdAt: Date.now(),
   };
 
-  return this.findByIdAndUpdate(
+  const updatedUser = await this.findByIdAndUpdate(
     user._id,
     {
       passwordReset,
     },
     { new: true }
   );
+
+  return {
+    user: updatedUser,
+    token: verifyNumber,
+  };
 };
 
 userSchema.statics.resetPassword = async function (
@@ -367,9 +377,9 @@ userSchema.statics.resetPassword = async function (
 
   if (Object.keys(errors).length) throw errors;
 
-  const valid = bcrypt.compareSync(
-    user.username + user.email,
-    token.toString()
+  const valid = await bcrypt.compare(
+    token.toString(),
+    user.passwordReset.token.toString()
   );
 
   if (!valid) errors.global = "Token is not valid.";

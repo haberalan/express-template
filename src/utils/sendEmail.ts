@@ -20,7 +20,7 @@ const sendMail = async (
 
     const templateFile = path.join(
       __dirname,
-      `../../templates/${template}.hbs`
+      `../../templates/user/${template}.hbs`
     );
     const templateContent: any = await fs.readFileSync(templateFile);
 

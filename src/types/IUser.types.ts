@@ -33,11 +33,15 @@ interface IUser extends Document {
 
 interface IUserModel extends Model<IUser> {
   login(username: string, password: string): Promise<IUser>;
-  signup(username: string, email: string, password: string): Promise<IUser>;
+  signup(
+    username: string,
+    email: string,
+    password: string
+  ): Promise<{ user: IUser; token: string }>;
   verify(token: string, id: string): Promise<IUser>;
   updateAvatar(user_id: string, image: Buffer): Promise<IUser>;
   updatePassword(user_id: string, newPassword: string): Promise<IUser>;
-  requestResetPassword(email: string): Promise<IUser>;
+  requestResetPassword(email: string): Promise<{ user: IUser; token: string }>;
   resetPassword(
     user_id: string,
     token: string,
