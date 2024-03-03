@@ -10,6 +10,7 @@ import { updateAvatar } from "./updateAvatar";
 import { updatePassword } from "./updatePassword";
 import { deleteUser } from "./delete";
 import { logoutUser } from "./logout";
+import { updateProfile } from "./updateProfile";
 
 export {
   signup,
@@ -24,4 +25,5 @@ export {
   updatePassword,
   deleteUser,
   logoutUser,
+  updateProfile,
 };

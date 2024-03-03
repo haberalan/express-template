@@ -407,6 +407,41 @@ userSchema.statics.resetPassword = async function (
 
 // userSchema.statics.updateEmail = async function (): Promise<IUser> {};
 
+userSchema.statics.updateProfile = async function (
+  user_id: string,
+  firstName: string,
+  lastName: string
+): Promise<IUser> {
+  let errors: {
+    firstName?: string;
+    lastName?: string;
+    global?: string;
+  } = {};
+
+  if (firstName && (firstName.length < 3 || firstName.length > 80))
+    errors.firstName = "First name is not valid.";
+
+  if (lastName && (lastName.length < 3 || lastName.length > 80))
+    errors.lastName = "Last name is not valid.";
+
+  if (Object.keys(errors).length) throw errors;
+
+  const user = await this.findById(user_id);
+
+  if (!user) errors.global = "There is no user.";
+
+  if (Object.keys(errors).length) throw errors;
+
+  return this.findByIdAndUpdate(
+    user_id,
+    {
+      firstName,
+      lastName,
+    },
+    { new: true }
+  );
+};
+
 userSchema.statics.deleteUser = async function (
   user_id: string
 ): Promise<IUser> {

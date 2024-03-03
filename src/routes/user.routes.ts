@@ -14,6 +14,7 @@ import {
   updatePassword,
   deleteUser,
   logoutUser,
+  updateProfile,
 } from "#src/controllers/user/index";
 
 const router = express.Router();
@@ -44,7 +45,7 @@ router.patch("/update-password", updatePassword);
 
 // router.patch('/update-email', userController.updateEmail);
 
-// router.patch('/update-profile', userController.updateProfile);
+router.patch("/update-profile", updateProfile);
 
 router.delete("/delete", deleteUser);
 
