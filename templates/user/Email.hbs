@@ -1,0 +1,30 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{title}}</title>
+    <link
+      href="https://fonts.googleapis.com/css?family=Inter:300,400,500,700"
+      rel="stylesheet"
+    />
+    <style type="text/css">
+      @import
+      url('https://fonts.googleapis.com/css?family=Inter:300,400,500,700');
+      body, p, a { font-family: 'Inter', Arial, sans-serif; color: black;
+      text-align: center; } .confirmation-code { font-size: 32px; font-weight:
+      bold; text-align: center; margin: 80px 0; } .content { padding: 20px; }
+      .footer { font-size: 14px; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="content">
+      <p>Hello,</p>
+      <p>{{text}}</p>
+      <div class="confirmation-code">{{code}}</div>
+      <p class="footer">
+        Insert the code on that
+        <a href="{{link}}" target="_blank">page</a>.
+      </p>
+    </div>
+  </body>
+</html>
