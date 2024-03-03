@@ -23,7 +23,7 @@ export const signup = async (
         code: data.token,
         link: "",
       },
-      "Welcome to our app! | express-template",
+      "Welcome to our app!",
       email
     );
 
