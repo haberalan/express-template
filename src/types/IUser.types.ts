@@ -14,6 +14,7 @@ interface IEmailUpdate extends Document {
 }
 
 interface IUser extends Document {
+  _id: ObjectId;
   username: string;
   email: string;
   password: string;
@@ -39,8 +40,8 @@ interface IUserModel extends Model<IUser> {
     password: string
   ): Promise<{ user: IUser; token: string }>;
   verify(token: string, id: string): Promise<IUser>;
-  updateAvatar(user_id: string, image: Buffer): Promise<IUser>;
-  updatePassword(user_id: string, newPassword: string): Promise<IUser>;
+  updateAvatar(user_id: ObjectId, image: Buffer): Promise<IUser>;
+  updatePassword(user_id: ObjectId, newPassword: string): Promise<IUser>;
   requestResetPassword(email: string): Promise<{ user: IUser; token: string }>;
   resetPassword(
     user_id: string,
@@ -48,16 +49,16 @@ interface IUserModel extends Model<IUser> {
     newPassword: string
   ): Promise<IUser>;
   requestUpdateEmail(
-    user_id: string,
+    user_id: ObjectId,
     newEmail: string
   ): Promise<{ user: IUser; token: string }>;
-  updateEmail(user_id: string, token: string): Promise<IUser>;
+  updateEmail(user_id: ObjectId, token: string): Promise<IUser>;
   updateProfile(
-    user_id: string,
+    user_id: ObjectId,
     firstName: string,
     lastName: string
   ): Promise<IUser>;
-  deleteUser(user_id: string): Promise<IUser>;
+  deleteUser(user_id: ObjectId): Promise<IUser>;
 }
 
 export { IUser, IUserModel, IPasswordReset, IEmailUpdate };
