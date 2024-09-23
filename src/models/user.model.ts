@@ -321,7 +321,9 @@ userSchema.statics.requestResetPassword = async function (
 
   const salt = await bcrypt.genSalt(10);
 
-  const verifyNumber = Math.floor(100000 + Math.random() * 900000).toString();
+  const verifyNumber = Math.floor(
+    100000000000 + Math.random() * 900000000000
+  ).toString();
 
   const token = await bcrypt.hash(verifyNumber, salt);
 
