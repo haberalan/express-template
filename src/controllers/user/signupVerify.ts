@@ -3,7 +3,7 @@ import User from "#src/models/user.model";
 
 export const signupVerify = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { token } = req.query;
+  const { token } = req.body;
 
   try {
     const user = await User.verify(token as string, id);
