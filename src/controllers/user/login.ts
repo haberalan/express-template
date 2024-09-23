@@ -27,6 +27,7 @@ export const login = async (req: Request, res: Response) => {
       .status(200)
       .json({
         _id: user.id,
+        avatar: Boolean(user.avatar),
         firstName: user.firstName,
         lastName: user.lastName,
         username: user.username,
