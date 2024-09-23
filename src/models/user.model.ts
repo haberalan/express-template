@@ -296,6 +296,7 @@ userSchema.statics.updatePassword = async function (
     user_id,
     {
       password: hashedPassword,
+      passwordLastUpdated: Date.now(),
     },
     { new: true }
   );
