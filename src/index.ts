@@ -37,17 +37,9 @@ import { userRoutes } from "./routes/user.routes";
 app.use("/api/user", userRoutes);
 
 // Route error handler
-app.use(
-  (
-    err: ErrorRequestHandler,
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) => {
-    console.log(err, req);
-    res.status(500).json({ error: "Internal server error." });
-  }
-);
+app.use((_: Request, res: Response) => {
+  res.status(500).json({ error: "Internal server error." });
+});
 
 // Connection to db and starting up server
 mongoose.set("strictQuery", false);
