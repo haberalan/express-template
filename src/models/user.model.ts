@@ -40,6 +40,14 @@ const emailUpdateSchema = new Schema<IEmailUpdate>({
   },
 });
 
+emailUpdateSchema.index(
+  { newEmail: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { newEmail: { $exists: true, $ne: null } },
+  }
+);
+
 const userSchema = new Schema<IUser, IUserModel>(
   {
     username: {
